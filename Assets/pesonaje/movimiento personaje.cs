@@ -1,19 +1,21 @@
 using UnityEngine;
+// Añade esta línea si usas el nuevo Input System mediante clases directas de teclado
 using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(Rigidbody2D))]
-public class PillMovement2D : MonoBehaviour
+public class PlayerController2D : MonoBehaviour
 {
-    [Header("Configuración de Movimiento")]
-    public float moveSpeed = 5f;
-    public float jumpForce = 7f;
+    [Header("Movement Settings")]
+    [SerializeField] private float moveSpeed = 8f;
+    [SerializeField] private float jumpForce = 12f;
 
-    [Header("Referencias de Input")]
-    public InputActionReference moveAction;
-    public InputActionReference jumpAction;
+    [Header("Ground Check")]
+    [SerializeField] private Transform groundCheck;
+    [SerializeField] private LayerMask groundLayer;
+    [SerializeField] private float groundCheckRadius = 0.2f;
 
     private Rigidbody2D rb;
-    private Vector2 moveInput;
+    private float horizontalInput;
     private bool isGrounded;
 
     private void Awake()
@@ -21,52 +23,40 @@ public class PillMovement2D : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
     }
 
-    private void OnEnable()
-    {
-        // Suscribirse al evento de salto
-        jumpAction.action.performed += OnJump;
-        
-        // Habilitar las acciones
-        moveAction.action.Enable();
-        jumpAction.action.Enable();
-    }
-
-    private void OnDisable()
-    {
-        // Desuscribirse para evitar fugas de memoria
-        jumpAction.action.performed -= OnJump;
-        
-        moveAction.action.Disable();
-        jumpAction.action.Disable();
-    }
-
     private void Update()
     {
-        // Leer el valor del joystick izquierdo o D-pad
-        moveInput = moveAction.action.ReadValue<Vector2>();
+        // Lectura adaptada al nuevo Input System (Teclas A/D o Flechas)
+        horizontalInput = 0f;
+        if (Keyboard.current != null)
+        {
+            if (Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed) horizontalInput = -1f;
+            if (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed) horizontalInput = 1f;
+        }
+
+        // Detección de salto con la barra espaciadora en el nuevo Input System
+        if (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame && isGrounded)
+        {
+            Jump();
+        }
     }
 
     private void FixedUpdate()
     {
-        // Aplicar velocidad en el eje X, manteniendo la velocidad actual en Y (gravedad)
-        rb.linearVelocity = new Vector2(moveInput.x * moveSpeed, rb.linearVelocity.y);
+        isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
+        rb.linearVelocity = new Vector2(horizontalInput * moveSpeed, rb.linearVelocity.y);
     }
 
-    private void OnJump(InputAction.CallbackContext context)
+    private void Jump()
     {
-        if (isGrounded)
-        {
-            rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
-            isGrounded = false;
-        }
+        rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
     }
 
-    private void OnCollisionEnter2D(Collision2D collision)
+    private void OnDrawGizmosSelected()
     {
-        // Detección básica de suelo usando tags
-        if (collision.gameObject.CompareTag("Ground"))
+        if (groundCheck != null)
         {
-            isGrounded = true;
+            Gizmos.color = Color.cyan;
+            Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
         }
     }
 }
