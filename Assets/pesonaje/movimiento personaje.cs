@@ -49,8 +49,40 @@ public class PlayerController2D : MonoBehaviour
             {
                 jumpRequested = true;
             }
+
+            // Con el juego en pausa (Time.timeScale = 0) no se procesa input del personaje
+            if (Time.timeScale == 0f) return;
+
+            Gamepad gamepad = Gamepad.current;
+
+            // Lectura adaptada al nuevo Input System (Teclas A/D o Flechas)
+            float keyboardInput = 0f;
+            if (Keyboard.current != null)
+            {
+                if (Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed) keyboardInput = -1f;
+                if (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed) keyboardInput = 1f;
+            }
+
+            // Mando: stick izquierdo (analógico, ya con zona muerta) y D-pad
+            float gamepadInput = 0f;
+            if (gamepad != null)
+            {
+                gamepadInput = gamepad.leftStick.ReadValue().x + gamepad.dpad.ReadValue().x;
+            }
+
+            horizontalInput = Mathf.Clamp(keyboardInput + gamepadInput, -1f, 1f);
+
+            // Salto con la barra espaciadora o con el botón A del mando (buttonSouth)
+            bool jumpPressed = (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame)
+                            || (gamepad != null && gamepad.buttonSouth.wasPressedThisFrame);
+
+            if (jumpPressed && isGrounded)
+            {
+                Jump();
+            }
         }
     }
+     
 
     private void FixedUpdate()
     {
