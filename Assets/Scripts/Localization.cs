@@ -45,6 +45,10 @@ public static class Localization
 
         ["confirmar.si"] = new[] { "Sí", "Yes" },
         ["confirmar.no"] = new[] { "No", "No" },
+
+        ["hud.gravedad"] = new[] { "Gravedad", "Gravity" },
+        ["hud.gravedad.invertida"] = new[] { "Gravedad invertida", "Gravity flipped" },
+        ["hud.controles"] = new[] { "A/D mover | Espacio saltar | E invertir gravedad | Esc pausa", "A/D move | Space jump | E flip gravity | Esc pause" },
     };
 
     // Se dispara cuando cambia el idioma
