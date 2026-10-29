@@ -29,6 +29,7 @@ public static class Localization
 
         ["pausa.titulo"] = new[] { "Pausa", "Pause" },
         ["pausa.reanudar"] = new[] { "Reanudar juego", "Resume game" },
+        ["pausa.reiniciar"] = new[] { "Reiniciar nivel", "Restart level" },
         ["pausa.menu"] = new[] { "Volver al menú principal", "Back to main menu" },
         ["pausa.menu.confirmar"] = new[] { "¿Seguro que quieres volver al menú principal?", "Are you sure you want to go back to the main menu?" },
 

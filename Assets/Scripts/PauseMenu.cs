@@ -94,6 +94,14 @@ public class PauseMenu : MonoBehaviour
         optionsMenu.Open();
     }
 
+    // Botón "Reiniciar nivel": vuelve a cargar la escena actual desde cero
+    public void RestartLevel()
+    {
+        isPaused = false;
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
+
     // Botón "Volver al menú principal": primero pide confirmación
     public void BackToMainMenu()
     {
