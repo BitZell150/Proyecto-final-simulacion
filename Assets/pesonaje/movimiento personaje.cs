@@ -108,7 +108,9 @@ public class PlayerController2D : MonoBehaviour
     private void Jump()
     {
         animator.SetTrigger("Jump");
-        rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
+        // Con gravedad invertida (Physics2D.gravity hacia arriba) se salta hacia abajo
+        float up = Physics2D.gravity.y * rb.gravityScale > 0f ? -1f : 1f;
+        rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce * up);
     }
 
     private void OnDrawGizmosSelected()
