@@ -33,6 +33,11 @@ public static class Localization
         ["pausa.menu"] = new[] { "Volver al menú principal", "Back to main menu" },
         ["pausa.menu.confirmar"] = new[] { "¿Seguro que quieres volver al menú principal?", "Are you sure you want to go back to the main menu?" },
 
+        ["nivel.completado"] = new[] { "Nivel completado", "Level complete" },
+        ["nivel.tutorial.completado"] = new[] { "Tutorial completado", "Tutorial complete" },
+        ["nivel.fin"] = new[] { "Fin del juego", "The End" },
+        ["nivel.siguiente"] = new[] { "Siguiente nivel", "Next level" },
+
         ["opciones.titulo"] = new[] { "Opciones", "Options" },
         ["opciones.musica"] = new[] { "Volumen música", "Music volume" },
         ["opciones.efectos"] = new[] { "Volumen efectos", "Effects volume" },

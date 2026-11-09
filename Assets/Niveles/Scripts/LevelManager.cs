@@ -20,6 +20,8 @@ public class LevelManager : MonoBehaviour
     [SerializeField] private string nextScene = "MainMenu";
     [SerializeField] private float deathDelay = 0.5f;
     [SerializeField] private float exitDelay = 0.5f;
+    [Tooltip("Menú 'Nivel completado' que se abre al cruzar la puerta. Vacío = pasa directo a la siguiente escena.")]
+    [SerializeField] private LevelCompleteMenu completeMenu;
 
     [Header("Límites (salir de aquí = morir)")]
     [SerializeField] private Rect levelBounds = new Rect(-2f, -3f, 30f, 20f);
@@ -67,18 +69,23 @@ public class LevelManager : MonoBehaviour
     {
         if (finishing) return;
         finishing = true;
+        GameSfx.PlayDeath();
         FreezePlayer(new Color(1f, 0.3f, 0.3f));
         StartCoroutine(LoadAfter(SceneManager.GetActiveScene().name, deathDelay));
     }
 
-    /// <summary>El jugador cruzó la puerta abierta.</summary>
+    /// <summary>
+    /// El jugador cruzó la puerta abierta: se congela y se abre el menú "Nivel completado"
+    /// (siguiente nivel o menú principal). Sin menú en la escena, pasa directo a la siguiente.
+    /// </summary>
     public void CompleteLevel()
     {
         if (finishing) return;
         finishing = true;
         FreezePlayer(new Color(0.6f, 1f, 0.6f));
         string target = string.IsNullOrEmpty(nextScene) ? "MainMenu" : nextScene;
-        StartCoroutine(LoadAfter(target, exitDelay));
+        if (completeMenu != null) StartCoroutine(ShowCompleteMenuAfter(target, exitDelay));
+        else StartCoroutine(LoadAfter(target, exitDelay));
     }
 
     public void Restart()
@@ -105,6 +112,12 @@ public class LevelManager : MonoBehaviour
     {
         yield return new WaitForSecondsRealtime(delay);
         SceneManager.LoadScene(sceneName);
+    }
+
+    private IEnumerator ShowCompleteMenuAfter(string sceneName, float delay)
+    {
+        yield return new WaitForSecondsRealtime(delay);
+        completeMenu.Show(sceneName);
     }
 
     private void OnDrawGizmos()

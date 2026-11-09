@@ -5,7 +5,9 @@ using UnityEngine.UI;
 // Opción de menú sin caja. Mientras está seleccionada (mando/teclado) o señalada con el mouse
 // muestra una flecha pixel art a la izquierda del texto y su contenido crece ligeramente.
 // La flecha no se escala (siempre se ve con píxeles nítidos); solo se desliza con el texto.
-public class MenuOption : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+// También reproduce los sonidos del menú: "click" al señalarla con el mouse y "seleccionar" al elegirla
+// (clic o aceptar con mando/teclado). Las filas "< valor >" no suenan al elegirlas: suenan al cambiar el valor.
+public class MenuOption : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler, ISubmitHandler
 {
     [Header("Contenido")]
     [SerializeField] private RectTransform content; // lo que crece al resaltar (texto o fila completa)
@@ -23,10 +25,14 @@ public class MenuOption : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     private bool hovered;
     private float scale = 1f;
     private Image arrowImage;
+    private Selectable selectable;
+    private bool isValueRow;
 
     private void Awake()
     {
         arrowImage = arrow.GetComponent<Image>();
+        selectable = GetComponent<Selectable>();
+        isValueRow = GetComponent<OptionSelector>() != null;
     }
 
     private void OnEnable()
@@ -56,6 +62,30 @@ public class MenuOption : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     public void OnPointerEnter(PointerEventData eventData)
     {
         hovered = true;
+        if (CanSound()) MenuSfx.PlayClick();
+    }
+
+    // Clic del mouse
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        if (eventData.button == PointerEventData.InputButton.Left) PlayChosen();
+    }
+
+    // Aceptar con mando o teclado
+    public void OnSubmit(BaseEventData eventData)
+    {
+        PlayChosen();
+    }
+
+    private void PlayChosen()
+    {
+        if (!isValueRow && CanSound()) MenuSfx.PlaySelect();
+    }
+
+    // Una opción desactivada no suena
+    private bool CanSound()
+    {
+        return selectable == null || selectable.IsInteractable();
     }
 
     public void OnPointerExit(PointerEventData eventData)

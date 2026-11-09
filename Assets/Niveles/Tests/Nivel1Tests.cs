@@ -42,8 +42,7 @@ public class Nivel1Tests : NivelBot
         yield return new WaitForSeconds(1f);
         Assert.IsFalse(Inverted, "No volvió a la gravedad normal");
         yield return WalkTo(25.5f, 6f);
-        yield return WaitUntilOrTimeout(() => ActiveScene == "Nivel2", 3f);
-        Assert.AreEqual("Nivel2", ActiveScene, "No cruzó el puente hasta la puerta");
+        yield return CruzarPuertaYElegirOpcion("Nivel1", "Nivel2", haySiguiente: true);
     }
 
     [UnityTest]

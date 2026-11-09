@@ -20,6 +20,10 @@ public class PlayerController2D : MonoBehaviour
 
     private Animator animator;
 
+    // Lo usa PlayerFootsteps para saber si el personaje pisa el suelo
+    public bool IsGrounded => isGrounded;
+    public float HorizontalInput => horizontalInput;
+
     private void Start()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -29,6 +33,9 @@ public class PlayerController2D : MonoBehaviour
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
+
+        // Sonido de pasos (se añade solo, así no hay que tocar las escenas)
+        if (GetComponent<PlayerFootsteps>() == null) gameObject.AddComponent<PlayerFootsteps>();
     }
 
     private void Update()
@@ -108,6 +115,7 @@ public class PlayerController2D : MonoBehaviour
     private void Jump()
     {
         animator.SetTrigger("Jump");
+        GameSfx.PlayJump();
         // Con gravedad invertida (Physics2D.gravity hacia arriba) se salta hacia abajo
         float up = Physics2D.gravity.y * rb.gravityScale > 0f ? -1f : 1f;
         rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce * up);

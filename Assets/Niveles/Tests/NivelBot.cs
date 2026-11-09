@@ -107,6 +107,63 @@ public abstract class NivelBot
         return hoja != null && !hoja.gameObject.activeSelf;
     }
 
+    // ---------- menú "Nivel completado" ----------
+
+    /// <summary>¿Está abierto el menú "Nivel completado" (LevelCompleteMenu/Panel)?</summary>
+    protected static bool LevelCompleteOpen()
+    {
+        var panel = Find("LevelCompleteMenu/Panel");
+        return panel != null && panel.gameObject.activeSelf;
+    }
+
+    /// <summary>¿Está abierto el cartel de confirmación del menú "Nivel completado"?</summary>
+    protected static bool CartelAbierto()
+    {
+        var cartel = Find("LevelCompleteMenu/ConfirmDialog");
+        return cartel != null && cartel.gameObject.activeSelf;
+    }
+
+    /// <summary>
+    /// Tras cruzar la puerta: el menú se abre, el juego se detiene y el nivel NO avanza solo.
+    /// Luego elige la opción seleccionada con Enter (la primera de la lista) y comprueba la escena resultante;
+    /// si es "Volver al menú principal", acepta también el cartel de confirmación.
+    /// 'haySiguiente' = false en el último nivel: solo existe "Volver al menú principal".
+    /// </summary>
+    protected IEnumerator CruzarPuertaYElegirOpcion(string escenaActual, string escenaEsperada, bool haySiguiente)
+    {
+        yield return WaitUntilOrTimeout(LevelCompleteOpen, 3f);
+        Assert.IsTrue(LevelCompleteOpen(), "No se abrió el menú 'Nivel completado' al cruzar la puerta");
+        Assert.AreEqual(escenaActual, ActiveScene, "El nivel no debe avanzar solo al cruzar la puerta");
+        Assert.AreEqual(0f, Time.timeScale, "Con el menú abierto el juego debe estar detenido");
+
+        var siguiente = Find("LevelCompleteMenu/Panel/BotonSiguiente");
+        Assert.IsNotNull(siguiente, "El menú no tiene el botón 'Siguiente nivel'");
+        Assert.AreEqual(haySiguiente, siguiente.gameObject.activeSelf,
+            haySiguiente ? "Falta la opción 'Siguiente nivel'" : "En el último nivel no debe haber 'Siguiente nivel'");
+
+        // El menú ignora las teclas los primeros 0.4 s; el primer toque puede solo recuperar la selección
+        yield return new WaitForSecondsRealtime(0.5f);
+        bool aMenuPrincipal = escenaEsperada == "MainMenu";
+        for (int i = 0; i < 2 && ActiveScene == escenaActual && !(aMenuPrincipal && CartelAbierto()); i++)
+        {
+            yield return Tap(Key.Enter);
+            yield return WaitUntilOrTimeout(() => ActiveScene != escenaActual || (aMenuPrincipal && CartelAbierto()), 1f);
+        }
+
+        if (aMenuPrincipal)
+        {
+            // "Volver al menú principal" pide confirmación: "No" está seleccionado, se pasa a "Sí" y se acepta
+            Assert.IsTrue(CartelAbierto(), "'Volver al menú principal' debe pedir confirmación");
+            Assert.AreEqual(escenaActual, ActiveScene, "Sin confirmar no debe salir del nivel");
+            yield return Tap(Key.LeftArrow);
+            yield return Tap(Key.Enter);
+            yield return WaitUntilOrTimeout(() => ActiveScene != escenaActual, 1f);
+        }
+
+        Assert.AreEqual(escenaEsperada, ActiveScene, "La opción elegida en 'Nivel completado' no cargó " + escenaEsperada);
+        Assert.AreEqual(1f, Time.timeScale, "Al salir del menú el tiempo debe volver a correr");
+    }
+
     // ---------- teclado virtual ----------
 
     protected void Hold(Key k) { held.Add(k); Push(); }
@@ -153,11 +210,11 @@ public abstract class NivelBot
         float t = 0f;
         while (t < timeout && !Dead && (x - Pos.x) * dir > 0.05f)
         {
-            t += Time.deltaTime;
+            t += Time.unscaledDeltaTime; // el menú "Nivel completado" detiene el tiempo del juego
             yield return null;
         }
         Release(k);
-        yield return new WaitForSeconds(0.15f);
+        yield return new WaitForSecondsRealtime(0.15f);
     }
 
     /// <summary>Salta y se mueve en el aire hasta targetX; espera a aterrizar.</summary>
@@ -177,12 +234,12 @@ public abstract class NivelBot
         while (t < timeout && !Dead)
         {
             if (holding && (targetX - Pos.x) * dir <= 0.05f) { Release(k); holding = false; }
-            t += Time.deltaTime;
+            t += Time.unscaledDeltaTime;
             if (t > 0.15f && Grounded) break;
             yield return null;
         }
         if (holding) Release(k);
-        yield return new WaitForSeconds(0.15f);
+        yield return new WaitForSecondsRealtime(0.15f);
     }
 
     protected IEnumerator WaitUntilOrTimeout(Func<bool> condition, float timeout)
@@ -190,7 +247,7 @@ public abstract class NivelBot
         float t = 0f;
         while (!condition() && t < timeout)
         {
-            t += Time.deltaTime;
+            t += Time.unscaledDeltaTime;
             yield return null;
         }
     }

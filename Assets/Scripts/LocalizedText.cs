@@ -26,6 +26,13 @@ public class LocalizedText : MonoBehaviour
         Localization.Changed -= Refresh;
     }
 
+    // Cambia la clave (por ejemplo, el título del menú "Nivel completado" según el nivel)
+    public void SetKey(string newKey)
+    {
+        key = newKey;
+        if (text != null) Refresh(); // si está inactivo, se refresca al activarse
+    }
+
     private void Refresh()
     {
         text.text = Localization.Get(key);

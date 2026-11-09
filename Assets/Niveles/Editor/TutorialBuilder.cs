@@ -69,7 +69,7 @@ public static class TutorialBuilder
 
         // ---- Jugador, gestor y cámara ----
         var jugador = NivelBuilder.Player(nivel, new Vector2(2.5f, 1f));
-        CrearGestor(jugador.transform, "Nivel1");
+        CrearGestor(jugador.transform, "Nivel1", "nivel.tutorial.completado");
         NivelBuilder.SetupCamera(new Vector2(13f, 7.5f), 7.5f);
 
         EditorSceneManager.MarkSceneDirty(scene);
@@ -179,14 +179,43 @@ public static class TutorialBuilder
         return door;
     }
 
-    internal static GameObject CrearGestor(Transform jugador, string siguiente)
+    /// <param name="tituloMenu">
+    /// Clave de Localization del título del menú "Nivel completado" de este nivel (el Tutorial usa
+    /// "nivel.tutorial.completado"). Vacío = "Nivel completado"; en el último nivel el menú pone "Fin del juego" solo.
+    /// </param>
+    internal static GameObject CrearGestor(Transform jugador, string siguiente, string tituloMenu = null)
     {
+        var menu = MenuNivelCompletado();
+
         var go = new GameObject("GestorNivel");
         var lm = go.AddComponent<LevelManager>();
         var so = new SerializedObject(lm);
         so.FindProperty("player").objectReferenceValue = jugador;
         so.FindProperty("nextScene").stringValue = siguiente;
+        so.FindProperty("completeMenu").objectReferenceValue = menu;
         so.ApplyModifiedPropertiesWithoutUndo();
+
+        if (menu != null && !string.IsNullOrEmpty(tituloMenu))
+        {
+            var menuSo = new SerializedObject(menu);
+            menuSo.FindProperty("titleKey").stringValue = tituloMenu;
+            menuSo.ApplyModifiedPropertiesWithoutUndo();
+        }
+
         return go;
+    }
+
+    /// <summary>
+    /// Menú "Nivel completado" de la escena (se conserva entre reconstrucciones, como el PauseMenu).
+    /// Si la escena todavía no lo tiene, se instancia desde Assets/Prefabs/LevelCompleteMenu.prefab.
+    /// </summary>
+    private static LevelCompleteMenu MenuNivelCompletado()
+    {
+        var existente = Object.FindFirstObjectByType<LevelCompleteMenu>(FindObjectsInactive.Include);
+        if (existente != null) return existente;
+
+        var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/LevelCompleteMenu.prefab");
+        if (prefab == null) return null;
+        return ((GameObject)PrefabUtility.InstantiatePrefab(prefab)).GetComponent<LevelCompleteMenu>();
     }
 }

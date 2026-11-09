@@ -108,8 +108,7 @@ public class Nivel2Tests : NivelBot
         Assert.Greater(Pos.y, 11f, "No subió a la bóveda");
         yield return WalkTo(24.6f);
         yield return Tap(Key.G);
-        yield return WaitUntilOrTimeout(() => ActiveScene == "MainMenu", 4f);
-        Assert.AreEqual("MainMenu", ActiveScene, "No terminó el nivel en la puerta");
+        yield return CruzarPuertaYElegirOpcion("Nivel2", "MainMenu", haySiguiente: false);
     }
 
     [UnityTest]

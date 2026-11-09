@@ -42,6 +42,7 @@ public class ConfirmDialog : MonoBehaviour
     public void Cancel()
     {
         Action callback = onNo;
+        MenuSfx.PlayBack();
         Hide();
         callback?.Invoke();
     }

@@ -99,6 +99,7 @@ public class InputModeManager : MonoBehaviour
             if (eventSystem != null && selected == null && preferred != null && preferred.activeInHierarchy)
             {
                 eventSystem.SetSelectedGameObject(preferred);
+                MenuSfx.SyncSelection(); // recuperar la opción al volver al mando no es navegar: sin click
             }
         }
         else if (!pointerMode && Time.frameCount % ReapplyEveryFrames == 0)

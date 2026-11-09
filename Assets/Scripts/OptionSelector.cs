@@ -35,7 +35,13 @@ public class OptionSelector : MonoBehaviour, IMoveHandler
         previousButton.interactable = index > 0;
         nextButton.interactable = index < options.Length - 1;
 
-        if (changed && notify) IndexChanged?.Invoke(index);
+        if (changed && notify)
+        {
+            IndexChanged?.Invoke(index);
+
+            // Después de avisar: así, al subir o bajar "Volumen efectos", suena con el volumen nuevo
+            MenuSfx.PlaySelect();
+        }
     }
 
     // Botones "<" y ">"

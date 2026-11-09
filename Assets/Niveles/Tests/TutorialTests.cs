@@ -49,8 +49,7 @@ public class TutorialTests : NivelBot
         yield return JumpTo(22.5f);
         Assert.IsFalse(Dead, "Murió saltando a la plataforma 2");
         yield return JumpTo(24.4f);
-        yield return WaitUntilOrTimeout(() => ActiveScene == "Nivel1", 3f);
-        Assert.AreEqual("Nivel1", ActiveScene, "No terminó el nivel al cruzar la puerta");
+        yield return CruzarPuertaYElegirOpcion("Tutorial", "Nivel1", haySiguiente: true);
     }
 
     [UnityTest]
