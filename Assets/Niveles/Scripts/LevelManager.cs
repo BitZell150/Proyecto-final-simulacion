@@ -82,6 +82,7 @@ public class LevelManager : MonoBehaviour
     {
         if (finishing) return;
         finishing = true;
+        GameSfx.PlayVictory();
         FreezePlayer(new Color(0.6f, 1f, 0.6f));
         string target = string.IsNullOrEmpty(nextScene) ? "MainMenu" : nextScene;
         if (completeMenu != null) StartCoroutine(ShowCompleteMenuAfter(target, exitDelay));

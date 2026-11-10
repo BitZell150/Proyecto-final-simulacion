@@ -1,12 +1,13 @@
 using UnityEngine;
 
-// Sonidos sueltos del juego (salto y muerte del personaje). Se crea solo al iniciar el juego y
+// Sonidos sueltos del juego (salto, muerte y victoria del personaje). Se crea solo al iniciar el juego y
 // sobrevive a los cambios de escena: así la muerte sigue sonando aunque el nivel se reinicie enseguida.
 // Los archivos están en Resources/Audio/SFX y el volumen sigue la opción "Volumen efectos".
 public class GameSfx : MonoBehaviour
 {
     private const string JumpPath = "Audio/SFX/saltar";
     private const string DeathPath = "Audio/SFX/muerte";
+    private const string VictoryPath = "Audio/SFX/victoria";
 
     // Dos rutas del controlador pueden pedir el mismo salto en frames seguidos: se suena una sola vez
     private const float JumpCooldown = 0.15f;
@@ -16,6 +17,7 @@ public class GameSfx : MonoBehaviour
     private AudioSource source;
     private AudioClip jumpClip;
     private AudioClip deathClip;
+    private AudioClip victoryClip;
     private float lastJumpTime = -10f;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -46,13 +48,20 @@ public class GameSfx : MonoBehaviour
     // El personaje muere
     public static void PlayDeath()
     {
-        if (instance != null) instance.Play(instance.deathClip, 1f);
+        if (instance != null) instance.Play(instance.deathClip, 0.8f);
+    }
+
+    // El personaje llega al final del nivel
+    public static void PlayVictory()
+    {
+        if (instance != null) instance.Play(instance.victoryClip, 1f);
     }
 
     private void Awake()
     {
         jumpClip = Resources.Load<AudioClip>(JumpPath);
         deathClip = Resources.Load<AudioClip>(DeathPath);
+        victoryClip = Resources.Load<AudioClip>(VictoryPath);
 
         source = gameObject.AddComponent<AudioSource>();
         source.playOnAwake = false;
