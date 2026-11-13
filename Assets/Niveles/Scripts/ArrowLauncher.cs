@@ -38,6 +38,7 @@ public class ArrowLauncher : MonoBehaviour
         if (fire && Time.time - lastShot >= cooldown && IsGrounded())
         {
             lastShot = Time.time;
+            GameSfx.PlayArrow();
             var arrow = Instantiate(arrowPrefab);
             arrow.Launch(SpawnPoint, new Vector2(speed * Facing, 0f), transform);
         }

@@ -6,23 +6,43 @@ using UnityEngine.SceneManagement;
 // Cada escena puede tener su pista (tabla SceneTracks); al cambiar de pista la anterior baja
 // poco a poco y la nueva sube. Si la nueva escena usa la misma pista, sigue sonando sin cortarse.
 // Las escenas que no están en la tabla no tienen música. El volumen sigue la opción "Volumen música".
+// Con el juego en pausa (SetMuffled) la música baja de volumen y se oye "a través de una pared".
 // Los archivos están en Resources/Audio/Music.
 public class MusicManager : MonoBehaviour
 {
-    // Escena -> pista (ruta dentro de Resources, sin extensión). Para música en un nivel, añadir una línea.
-    private static readonly Dictionary<string, string> SceneTracks = new Dictionary<string, string>
-    {
-        { "MainMenu", "Audio/Music/goblins_den" },
-    };
+    private const string MenuTrack = "Audio/Music/goblins_den";
+    private const string LevelTrack = "Audio/Music/lost_in_the_maze";
 
-    private const float BaseVolume = 0.5f; // volumen máximo de la música, antes de aplicar "Volumen música"
+    // Escena -> (pista, volumen máximo de esa pista antes de aplicar "Volumen música").
+    // La ruta es dentro de Resources, sin extensión. Para música en otra escena, añadir una línea.
+    private static readonly Dictionary<string, (string path, float volume)> SceneTracks =
+        new Dictionary<string, (string path, float volume)>
+        {
+            { "MainMenu", (MenuTrack, 0.5f) },
+            // Esta pista está masterizada muy fuerte (casi 10 veces más que la del menú): por eso su volumen es bajo
+            { "Tutorial", (LevelTrack, 0.12f) },
+            { "Nivel1", (LevelTrack, 0.12f) },
+            { "Nivel2", (LevelTrack, 0.12f) },
+        };
+
     private const float FadeSeconds = 0.6f;
+
+    // En pausa: la música baja al 40 % y se le quitan los agudos (filtro paso bajo) como si sonara tras una pared
+    private const float MuffledVolume = 0.4f;
+    private const float MuffledCutoff = 600f;   // Hz
+    private const float NormalCutoff = 22000f;  // Hz (sin filtrar)
+    private const float MuffleSeconds = 0.25f;
 
     private static MusicManager instance;
 
     private AudioSource source;
-    private AudioClip wanted;  // pista que debe sonar en la escena actual (null = ninguna)
-    private float fade;        // 0 = en silencio, 1 = a todo volumen
+    private AudioLowPassFilter lowPass;
+    private AudioClip wanted;       // pista que debe sonar en la escena actual (null = ninguna)
+    private float wantedVolume;     // volumen máximo de esa pista
+    private float trackVolume;      // volumen máximo de la pista que suena ahora
+    private float fade;             // 0 = en silencio, 1 = a todo volumen
+    private bool muffled;           // el juego está en pausa
+    private float muffle;           // 0 = normal, 1 = amortiguada del todo
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatics()
@@ -43,6 +63,12 @@ public class MusicManager : MonoBehaviour
         instance.ChooseTrack(SceneManager.GetActiveScene().name);
     }
 
+    // Pausa del juego: la música baja y se amortigua (true) o vuelve a la normalidad (false)
+    public static void SetMuffled(bool value)
+    {
+        if (instance != null) instance.muffled = value;
+    }
+
     private void Awake()
     {
         source = gameObject.AddComponent<AudioSource>();
@@ -51,6 +77,11 @@ public class MusicManager : MonoBehaviour
         source.spatialBlend = 0f;
         source.ignoreListenerPause = true; // la música sigue en pausa
         source.volume = 0f;
+
+        // El filtro se activa solo mientras la música está amortiguada
+        lowPass = gameObject.AddComponent<AudioLowPassFilter>();
+        lowPass.cutoffFrequency = NormalCutoff;
+        lowPass.enabled = false;
     }
 
     private void OnEnable()
@@ -70,7 +101,18 @@ public class MusicManager : MonoBehaviour
 
     private void ChooseTrack(string sceneName)
     {
-        wanted = SceneTracks.TryGetValue(sceneName, out string path) ? Resources.Load<AudioClip>(path) : null;
+        // Una escena nueva empieza sin pausa (por ejemplo, al reiniciar el nivel desde el menú de pausa)
+        muffled = false;
+
+        if (SceneTracks.TryGetValue(sceneName, out var track))
+        {
+            wanted = Resources.Load<AudioClip>(track.path);
+            wantedVolume = track.volume;
+        }
+        else
+        {
+            wanted = null;
+        }
     }
 
     private void Update()
@@ -92,9 +134,19 @@ public class MusicManager : MonoBehaviour
         {
             if (!source.isPlaying) source.Play();
             fade = Mathf.MoveTowards(fade, 1f, step);
+            trackVolume = wantedVolume; // mientras baja la pista anterior se conserva su propio volumen
+        }
+
+        // Pausa: la música baja de volumen y se le quitan los agudos poco a poco
+        muffle = Mathf.MoveTowards(muffle, muffled ? 1f : 0f, Time.unscaledDeltaTime / MuffleSeconds);
+        lowPass.enabled = muffle > 0.001f;
+        if (lowPass.enabled)
+        {
+            // El corte baja de forma exponencial: así la transición suena pareja
+            lowPass.cutoffFrequency = NormalCutoff * Mathf.Pow(MuffledCutoff / NormalCutoff, muffle);
         }
 
         float music = GameSettings.MusicVolume / (float)GameSettings.MaxVolume;
-        source.volume = BaseVolume * music * fade;
+        source.volume = trackVolume * music * fade * Mathf.Lerp(1f, MuffledVolume, muffle);
     }
 }

@@ -72,12 +72,14 @@ public class PauseMenu : MonoBehaviour
 
         // Evita que el juego quede congelado si se sale de Play estando en pausa
         if (isPaused || restoreTimeRoutine != null) Time.timeScale = 1f;
+        if (isPaused) MusicManager.SetMuffled(false);
     }
 
     // Botón "Reanudar juego"
     public void Resume()
     {
         isPaused = false;
+        MusicManager.SetMuffled(false);
         pausePanel.SetActive(false);
         optionsMenu.Close();
         confirmDialog.Close();
@@ -132,6 +134,7 @@ public class PauseMenu : MonoBehaviour
 
         isPaused = true;
         Time.timeScale = 0f;
+        MusicManager.SetMuffled(true);
         pausePanel.SetActive(true);
         MenuNavigation.Select(resumeButton);
     }

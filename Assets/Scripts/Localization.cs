@@ -20,8 +20,6 @@ public static class Localization
     // Cada clave lleva un texto por idioma, en el orden de Language
     private static readonly Dictionary<string, string[]> Texts = new Dictionary<string, string[]>
     {
-        ["titulo.juego"] = new[] { "Proyecto Final Simulación", "Simulation Final Project" },
-
         ["menu.iniciar"] = new[] { "Iniciar juego", "Start game" },
         ["menu.opciones"] = new[] { "Opciones", "Options" },
         ["menu.salir"] = new[] { "Salir del juego", "Quit game" },

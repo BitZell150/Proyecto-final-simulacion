@@ -63,9 +63,18 @@ public class GravityController : MonoBehaviour
         if (!invert && !less && !more) return;
         if (!IsPlayerGrounded()) return;
 
-        if (invert) inverted = !inverted;
+        if (invert)
+        {
+            inverted = !inverted;
+            GameSfx.PlayGravityFlip();
+        }
+
+        // Los sonidos de reducir/aumentar solo suenan si la gravedad cambió de verdad (no en el tope)
+        int oldIndex = index;
         if (less) index = Mathf.Max(0, index - 1);
         if (more) index = Mathf.Min(multipliers.Length - 1, index + 1);
+        if (index < oldIndex) GameSfx.PlayGravityDown();
+        else if (index > oldIndex) GameSfx.PlayGravityUp();
         Apply();
     }
 

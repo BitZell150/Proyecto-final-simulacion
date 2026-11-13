@@ -125,6 +125,9 @@ public static class Nivel2Builder
         Nivel1Builder.SetBounds(gestor, new Rect(-2f, -3f, 30f, 19f));
         NivelBuilder.SetupCamera(new Vector2(13f, 7.5f), 7.5f);
 
+        // Arte: reemplaza los cuadrados de prueba y añade fondo y decoración (no toca colliders ni lógica)
+        Nivel2Arte.Aplicar(nivel, geo, pel, mec);
+
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene);
         AssetDatabase.SaveAssets();

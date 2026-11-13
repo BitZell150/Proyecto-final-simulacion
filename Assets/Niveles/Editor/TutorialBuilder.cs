@@ -72,6 +72,9 @@ public static class TutorialBuilder
         CrearGestor(jugador.transform, "Nivel1", "nivel.tutorial.completado");
         NivelBuilder.SetupCamera(new Vector2(13f, 7.5f), 7.5f);
 
+        // Arte: reemplaza los cuadrados de prueba y añade fondo y decoración (no toca colliders ni lógica)
+        TutorialArte.Aplicar(nivel, geo, pel, mec);
+
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene);
         AssetDatabase.SaveAssets();
