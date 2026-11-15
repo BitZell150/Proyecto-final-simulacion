@@ -1,38 +1,23 @@
 using UnityEngine;
 
-// Recarga de usos de gravedad: al tocarla el jugador recupera usos y la recarga desaparece hasta que reaparezca.
-// El contacto se comprueba a mano (caja contra caja), igual que KillZone.
+// Recarga de usos de gravedad: al tocarla, el jugador recupera inversiones (cuando GravityController las tiene
+// limitadas) y la recarga desaparece. El contacto se comprueba a mano (caja contra caja).
 public class GravityRecharge : MonoBehaviour
 {
     [SerializeField, Min(1)] private int uses = 1;
-    [SerializeField] private Vector2 size = new Vector2(0.8f, 0.8f); // unidades de Unity
+    [SerializeField] private Vector2 size = new Vector2(0.8f, 0.8f);
 
     [Header("Flotar")]
-    [SerializeField] private float bobHeight = 0.15f;   // unidades de Unity
+    [SerializeField] private float bobHeight = 0.12f;
     [SerializeField] private float bobFrequency = 0.8f; // Hz
 
     private PlayerController2D player;
-    private GravityInverter inverter;
-    private Renderer[] renderers;
     private Vector3 startPosition;
-    private bool collected;
 
     private void Awake()
     {
         player = FindAnyObjectByType<PlayerController2D>();
-        inverter = player != null ? player.GetComponent<GravityInverter>() : null;
-        renderers = GetComponentsInChildren<Renderer>();
         startPosition = transform.position;
-    }
-
-    private void OnEnable()
-    {
-        PlayerController2D.Respawned += Restore;
-    }
-
-    private void OnDisable()
-    {
-        PlayerController2D.Respawned -= Restore;
     }
 
     private void Update()
@@ -44,25 +29,16 @@ public class GravityRecharge : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (collected || inverter == null || player.IsDead) return;
-        if (inverter.UsesLeft >= inverter.MaxUses) return;
+        GravityController gravity = GravityController.Instance;
+        if (gravity == null || player == null || player.Body == null) return;
+        if (!gravity.LimitedInversions || gravity.InversionsLeft >= gravity.MaxInversions) return;
 
         if (PhysicsWorld.BoxesOverlap(startPosition, size, player.Body.WorldCenter, player.Body.WorldSize))
         {
-            inverter.AddUses(uses);
-            SetCollected(true);
+            gravity.AddInversions(uses);
+            GameSfx.PlayGravityUp();
+            gameObject.SetActive(false);
         }
-    }
-
-    private void Restore()
-    {
-        SetCollected(false);
-    }
-
-    private void SetCollected(bool value)
-    {
-        collected = value;
-        foreach (Renderer r in renderers) r.enabled = !value;
     }
 
     private void OnDrawGizmosSelected()

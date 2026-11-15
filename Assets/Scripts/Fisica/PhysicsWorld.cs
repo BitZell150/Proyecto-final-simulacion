@@ -1,18 +1,15 @@
 using UnityEngine;
 
-// Constantes y fórmulas comunes de la física del juego.
-// Toda la física se calcula en unidades del SI (m, s, kg, N) y se pasa a unidades de Unity solo al mover
-// los objetos, igual que el factor de escala del taller de movimiento parabólico.
+// Constantes y fórmulas comunes de la física del juego (1 unidad de Unity = 1 m, como en la flecha).
 public static class PhysicsWorld
 {
-    // Aceleración de la gravedad (m/s²)
-    public const float Gravity = 9.81f;
-
-    // Unidades de Unity por metro: el caballero mide 2,4 unidades, es decir, 1,6 m
-    public const float UnitsPerMeter = 1.5f;
-
-    // Holgura (en unidades de Unity) entre cuerpos en contacto, para que no queden incrustados
+    // Holgura entre cuerpos en contacto, para que no queden incrustados
     public const float SkinWidth = 0.02f;
+
+    // Gravedad actual del juego. GravityController la cambia (sentido y magnitud) y la guarda en
+    // Physics2D.gravity para que la lean todos: jugador, caja, flecha y proyectiles. Unity no la aplica
+    // a nada, porque ningún cuerpo del juego es dinámico: cada uno la integra con su propio código.
+    public static Vector2 Gravity => Physics2D.gravity;
 
     // ¿Se solapan dos cajas alineadas con los ejes (AABB)? Es el mismo criterio del taller de colisiones
     // (|x1 - x2| <= distancia de contacto), aplicado en los dos ejes.

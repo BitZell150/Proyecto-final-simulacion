@@ -1,9 +1,9 @@
 using UnityEngine;
 
-// Proyectil con movimiento parabólico calculado por código (ver Ballistics), sin Rigidbody2D.
+// Proyectil del cañón con movimiento parabólico calculado por código (ver Ballistics), sin Rigidbody2D.
 // En cada paso de física:
-//   1. Integra velocidad y desplazamiento con gravedad y rozamiento con el aire.
-//   2. Comprueba a mano si el círculo del proyectil toca la caja del jugador (y lo hace reaparecer).
+//   1. Integra velocidad y desplazamiento con la gravedad del juego y el rozamiento con el aire.
+//   2. Comprueba a mano si el círculo del proyectil toca la caja del jugador (y lo mata: el nivel se reinicia).
 //   3. Lanza un CircleCast entre la posición anterior y la nueva para ver si choca con algo sólido.
 //      Si choca con una caja empujable le transmite la velocidad con la fórmula del choque elástico.
 // Entre pasos de física la imagen se interpola para que el movimiento se vea suave.
@@ -11,16 +11,16 @@ public class Projectile : MonoBehaviour
 {
     private const int MaxHits = 4;
 
-    [SerializeField, Min(0.01f)] private float radius = 0.2f; // unidades de Unity
+    [SerializeField, Min(0.01f)] private float radius = 0.2f;
     [SerializeField, Min(0.1f)] private float lifetime = 8f;  // s
     [SerializeField] private LayerMask solidLayers = Physics2D.DefaultRaycastLayers;
 
     private readonly RaycastHit2D[] hits = new RaycastHit2D[MaxHits];
     private ContactFilter2D solidFilter;
 
-    private Vector2 origin;        // punto de lanzamiento (unidades de Unity)
-    private Vector2 velocity;      // m/s
-    private Vector2 displacement;  // m desde el punto de lanzamiento
+    private Vector2 origin;        // punto de lanzamiento
+    private Vector2 velocity;
+    private Vector2 displacement;  // desde el punto de lanzamiento
     private float mass;
     private float drag;
     private Vector2 wind;
@@ -58,16 +58,6 @@ public class Projectile : MonoBehaviour
         player = FindAnyObjectByType<PlayerController2D>();
     }
 
-    private void OnEnable()
-    {
-        PlayerController2D.Respawned += Despawn;
-    }
-
-    private void OnDisable()
-    {
-        PlayerController2D.Respawned -= Despawn;
-    }
-
     private void FixedUpdate()
     {
         if (!launched) return;
@@ -76,12 +66,12 @@ public class Projectile : MonoBehaviour
         age += dt;
         if (age > lifetime)
         {
-            Despawn();
+            Destroy(gameObject);
             return;
         }
 
-        Ballistics.Step(ref velocity, ref displacement, mass, drag, wind, dt);
-        Vector2 next = origin + displacement * PhysicsWorld.UnitsPerMeter;
+        Ballistics.Step(ref velocity, ref displacement, PhysicsWorld.Gravity, mass, drag, wind, dt);
+        Vector2 next = origin + displacement;
 
         previousPosition = currentPosition;
 
@@ -91,18 +81,18 @@ public class Projectile : MonoBehaviour
         if (distance > 0f && TryGetSolidHit(currentPosition, path / distance, distance, out RaycastHit2D hit))
         {
             currentPosition = hit.centroid;
-            if (HitsPlayer(currentPosition)) player.Kill();
+            if (HitsPlayer(currentPosition)) KillPlayer();
             else TransferToBox(hit);
 
-            Despawn();
+            Destroy(gameObject);
             return;
         }
 
         currentPosition = next;
         if (HitsPlayer(currentPosition))
         {
-            player.Kill();
-            Despawn();
+            KillPlayer();
+            Destroy(gameObject);
         }
     }
 
@@ -145,10 +135,19 @@ public class Projectile : MonoBehaviour
     // Círculo del proyectil contra la caja del jugador (AABB), calculado a mano
     private bool HitsPlayer(Vector2 position)
     {
-        if (player == null || player.IsDead) return false;
+        if (player == null || player.Body == null) return false;
+        if (LevelManager.Instance != null && LevelManager.Instance.IsFinishing) return false;
 
         PhysicsBody2D body = player.Body;
         return PhysicsWorld.CircleOverlapsBox(position, radius, body.WorldCenter, body.WorldSize);
+    }
+
+    private void KillPlayer()
+    {
+        if (LevelManager.Instance == null) return;
+
+        Debug.Log($"[Niveles] Muerte por proyectil en {currentPosition}");
+        LevelManager.Instance.KillPlayer();
     }
 
     // Choque elástico en una dimensión (eje x) entre el proyectil y una caja empujable
@@ -160,12 +159,6 @@ public class Projectile : MonoBehaviour
         PhysicsBody2D boxBody = box.Body;
         PhysicsWorld.ElasticCollision1D(mass, velocity.x, boxBody.Mass, boxBody.Velocity.x, out _, out float boxVelocityX);
         boxBody.Velocity = new Vector2(boxVelocityX, boxBody.Velocity.y);
-    }
-
-    private void Despawn()
-    {
-        launched = false;
-        Destroy(gameObject);
     }
 
     private void OnDrawGizmosSelected()

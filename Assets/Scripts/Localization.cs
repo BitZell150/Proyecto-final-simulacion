@@ -20,8 +20,6 @@ public static class Localization
     // Cada clave lleva un texto por idioma, en el orden de Language
     private static readonly Dictionary<string, string[]> Texts = new Dictionary<string, string[]>
     {
-        ["titulo.juego"] = new[] { "Proyecto Final Simulación", "Simulation Final Project" },
-
         ["menu.iniciar"] = new[] { "Iniciar juego", "Start game" },
         ["menu.opciones"] = new[] { "Opciones", "Options" },
         ["menu.salir"] = new[] { "Salir del juego", "Quit game" },
@@ -29,8 +27,14 @@ public static class Localization
 
         ["pausa.titulo"] = new[] { "Pausa", "Pause" },
         ["pausa.reanudar"] = new[] { "Reanudar juego", "Resume game" },
+        ["pausa.reiniciar"] = new[] { "Reiniciar nivel", "Restart level" },
         ["pausa.menu"] = new[] { "Volver al menú principal", "Back to main menu" },
         ["pausa.menu.confirmar"] = new[] { "¿Seguro que quieres volver al menú principal?", "Are you sure you want to go back to the main menu?" },
+
+        ["nivel.completado"] = new[] { "Nivel completado", "Level complete" },
+        ["nivel.tutorial.completado"] = new[] { "Tutorial completado", "Tutorial complete" },
+        ["nivel.fin"] = new[] { "Fin del juego", "The End" },
+        ["nivel.siguiente"] = new[] { "Siguiente nivel", "Next level" },
 
         ["opciones.titulo"] = new[] { "Opciones", "Options" },
         ["opciones.musica"] = new[] { "Volumen música", "Music volume" },
@@ -45,10 +49,6 @@ public static class Localization
 
         ["confirmar.si"] = new[] { "Sí", "Yes" },
         ["confirmar.no"] = new[] { "No", "No" },
-
-        ["hud.gravedad"] = new[] { "Gravedad", "Gravity" },
-        ["hud.gravedad.invertida"] = new[] { "Gravedad invertida", "Gravity flipped" },
-        ["hud.controles"] = new[] { "A/D mover | Espacio saltar | E invertir gravedad | Esc pausa", "A/D move | Space jump | E flip gravity | Esc pause" },
     };
 
     // Se dispara cuando cambia el idioma

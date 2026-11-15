@@ -89,6 +89,7 @@ public class OptionsMenu : MonoBehaviour
     {
         if (!IsOpen) return;
 
+        MenuSfx.PlayBack();
         gameObject.SetActive(false);
         ClosedFrame = Time.frameCount;
         Closed?.Invoke();

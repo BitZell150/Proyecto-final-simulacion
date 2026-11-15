@@ -2,21 +2,21 @@ using UnityEngine;
 
 // Cuerpo con física propia: no usa la gravedad ni las fuerzas de Unity (el Rigidbody2D queda Kinematic).
 // En cada paso aplica la segunda ley de Newton y la integra con Euler semi-implícito, como en los talleres:
-//   a = g + ΣF / m - (c / m)·v
+//   a = k·g + ΣF / m - (c / m)·v        (g = gravedad del juego; k = escala de gravedad del cuerpo)
 //   v(t + Δt) = v(t) + a·Δt
 //   x(t + Δt) = x(t) + v(t + Δt)·Δt
 // Unity solo se usa para detectar contra qué choca la caja del collider (BoxCast); la respuesta al choque
 // se calcula aquí. Quien controla el cuerpo (jugador, caja...) llama a Step una vez por FixedUpdate.
+// La masa y la escala de gravedad son las del Rigidbody2D, así se siguen editando donde siempre.
 [RequireComponent(typeof(Rigidbody2D), typeof(BoxCollider2D))]
 public class PhysicsBody2D : MonoBehaviour
 {
     private const int MaxHits = 8;
 
-    // Por debajo de esta rapidez (m/s) un choque no rebota, para que el cuerpo pueda quedar en reposo
+    // Por debajo de esta rapidez un choque no rebota, para que el cuerpo pueda quedar en reposo
     private const float MinBounceSpeed = 0.5f;
 
-    [Header("Masa y aire")]
-    [SerializeField, Min(0.01f)] private float mass = 1f;   // kg
+    [Header("Aire")]
     [SerializeField, Min(0f)] private float airDrag = 0f;   // c en kg/s: fuerza del aire F = -c·v
 
     [Header("Choques")]
@@ -28,31 +28,24 @@ public class PhysicsBody2D : MonoBehaviour
     private ContactFilter2D solidFilter;
     private readonly RaycastHit2D[] hits = new RaycastHit2D[MaxHits];
 
+    private float mass;
+    private float gravityScale;
     private Vector2 netForce;
     private Vector2 targetPosition;
-    private int gravitySign = 1;
 
     public float Mass => mass;
 
-    // Velocidad en m/s
+    // Velocidad en u/s
     public Vector2 Velocity { get; set; }
 
-    // +1: la gravedad tira hacia abajo; -1: tira hacia arriba (gravedad invertida)
-    public int GravitySign
-    {
-        get => gravitySign;
-        set
-        {
-            gravitySign = value < 0 ? -1 : 1;
-            IsGrounded = false;
-        }
-    }
+    // Aceleración de la gravedad sobre este cuerpo (u/s²)
+    public Vector2 GravityAcceleration => PhysicsWorld.Gravity * gravityScale;
 
     // Vector unitario hacia donde tira la gravedad, y su opuesto ("arriba" para este cuerpo)
-    public Vector2 GravityDirection => new Vector2(0f, -gravitySign);
-    public Vector2 Up => new Vector2(0f, gravitySign);
+    public Vector2 GravityDirection => new Vector2(0f, PhysicsWorld.Gravity.y > 0f ? 1f : -1f);
+    public Vector2 Up => -GravityDirection;
 
-    // Apoyado sobre una superficie en el sentido de su gravedad (suelo, o techo si está invertida)
+    // Apoyado sobre una superficie en el sentido de la gravedad (suelo, o techo si está invertida)
     public bool IsGrounded { get; private set; }
     public PhysicsBody2D GroundBody { get; private set; }
 
@@ -61,7 +54,7 @@ public class PhysicsBody2D : MonoBehaviour
     public PhysicsBody2D WallBody { get; private set; }
     public int WallSide { get; private set; }
 
-    // Caja del collider en el mundo, en la posición física actual (unidades de Unity)
+    // Caja del collider en el mundo, en la posición física actual
     public Vector2 WorldCenter => rb.position + Vector2.Scale(box.offset, transform.lossyScale);
     public Vector2 WorldSize => Vector2.Scale(box.size, Abs(transform.lossyScale));
 
@@ -74,11 +67,15 @@ public class PhysicsBody2D : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         box = GetComponent<BoxCollider2D>();
 
-        // Unity no debe aplicar gravedad ni fuerzas: el movimiento lo decide este script
+        // Se leen antes de volver cinemático el cuerpo
+        mass = Mathf.Max(0.01f, rb.mass);
+        gravityScale = rb.gravityScale;
+
+        // Unity no debe aplicar gravedad ni fuerzas: el movimiento lo decide este script.
+        // Los contactos completos hacen que los triggers (pinchos, palanca, puerta) sigan detectando al cuerpo.
         rb.bodyType = RigidbodyType2D.Kinematic;
-        rb.gravityScale = 0f;
-        rb.constraints = RigidbodyConstraints2D.FreezeRotation;
-        rb.interpolation = RigidbodyInterpolation2D.Interpolate;
+        rb.freezeRotation = true;
+        rb.useFullKinematicContacts = true;
 
         solidFilter = new ContactFilter2D();
         solidFilter.SetLayerMask(solidLayers);
@@ -97,11 +94,11 @@ public class PhysicsBody2D : MonoBehaviour
     public void Step(float dt)
     {
         // Segunda ley de Newton: gravedad + fuerzas aplicadas + rozamiento lineal con el aire
-        Vector2 acceleration = PhysicsWorld.Gravity * GravityDirection + netForce / mass - airDrag / mass * Velocity;
+        Vector2 acceleration = GravityAcceleration + netForce / mass - airDrag / mass * Velocity;
         netForce = Vector2.zero;
 
         Velocity += acceleration * dt;
-        Vector2 displacement = Velocity * dt * PhysicsWorld.UnitsPerMeter;
+        Vector2 displacement = Velocity * dt;
 
         IsGrounded = false;
         GroundBody = null;
@@ -116,17 +113,6 @@ public class PhysicsBody2D : MonoBehaviour
 
         targetPosition = position;
         rb.MovePosition(position);
-    }
-
-    // Lleva el cuerpo a una posición sin atravesar el espacio intermedio (reaparecer, reiniciar...)
-    public void Teleport(Vector2 position)
-    {
-        rb.position = position;
-        transform.position = new Vector3(position.x, position.y, transform.position.z);
-        targetPosition = position;
-        Velocity = Vector2.zero;
-        netForce = Vector2.zero;
-        IsGrounded = false;
     }
 
     // Mueve el cuerpo en un eje hasta donde lo deje el primer obstáculo y devuelve la nueva posición

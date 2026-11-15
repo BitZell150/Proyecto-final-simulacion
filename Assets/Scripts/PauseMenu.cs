@@ -2,7 +2,6 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
-using UnityEngine.InputSystem.UI;
 using UnityEngine.SceneManagement;
 
 public class PauseMenu : MonoBehaviour
@@ -32,7 +31,7 @@ public class PauseMenu : MonoBehaviour
 
     private void Start()
     {
-        EnsureEventSystem();
+        MenuNavigation.EnsureEventSystem();
         pausePanel.SetActive(false);
     }
 
@@ -46,7 +45,9 @@ public class PauseMenu : MonoBehaviour
 
         if (!isPaused)
         {
-            if (startPressed || escapePressed) Pause();
+            // Al morir o cruzar la puerta de salida el nivel ya está terminando: no se puede pausar
+            bool levelFinishing = LevelManager.Instance != null && LevelManager.Instance.IsFinishing;
+            if ((startPressed || escapePressed) && !levelFinishing) Pause();
             return;
         }
 
@@ -71,12 +72,14 @@ public class PauseMenu : MonoBehaviour
 
         // Evita que el juego quede congelado si se sale de Play estando en pausa
         if (isPaused || restoreTimeRoutine != null) Time.timeScale = 1f;
+        if (isPaused) MusicManager.SetMuffled(false);
     }
 
     // Botón "Reanudar juego"
     public void Resume()
     {
         isPaused = false;
+        MusicManager.SetMuffled(false);
         pausePanel.SetActive(false);
         optionsMenu.Close();
         confirmDialog.Close();
@@ -92,6 +95,14 @@ public class PauseMenu : MonoBehaviour
     {
         pausePanel.SetActive(false);
         optionsMenu.Open();
+    }
+
+    // Botón "Reiniciar nivel": vuelve a cargar la escena actual desde cero
+    public void RestartLevel()
+    {
+        isPaused = false;
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
     // Botón "Volver al menú principal": primero pide confirmación
@@ -123,6 +134,7 @@ public class PauseMenu : MonoBehaviour
 
         isPaused = true;
         Time.timeScale = 0f;
+        MusicManager.SetMuffled(true);
         pausePanel.SetActive(true);
         MenuNavigation.Select(resumeButton);
     }
@@ -142,15 +154,5 @@ public class PauseMenu : MonoBehaviour
         yield return null;
         Time.timeScale = 1f;
         restoreTimeRoutine = null;
-    }
-
-    // Si el nivel no trae EventSystem propio, se crea uno para poder navegar con mando y teclado
-    private static void EnsureEventSystem()
-    {
-        if (EventSystem.current != null) return;
-
-        var eventSystemObject = new GameObject("EventSystem");
-        eventSystemObject.AddComponent<EventSystem>();
-        eventSystemObject.AddComponent<InputSystemUIInputModule>();
     }
 }
